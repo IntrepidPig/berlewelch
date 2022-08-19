@@ -50,47 +50,57 @@ impl Matrix {
 
 	/// Attempt to row reduce the matrix as far as possible down the diagonal from left to right
 	pub fn row_reduce(&mut self) {
-		let (m, _n) = (self.m, self.n);
-		// For each row
-		// TODO: do it by column instead to get better (correct) results
-		for row in 0..m {
-			// Find a row with a nonzero coefficient in the matching column for this row. If it is different from the
-			// current row, swap them so that this row has a nonzero coefficient in its diagonal entry.
-			let mut found = false;
-			for row_below in row..m {
-				if self.elem(row_below, row) != Gfe::zero() {
-					if row_below != row {
-						self.swap_rows(row_below, row);
-					}
-					found = true;
-					break;
+		let (m, n) = (self.m, self.n);
+
+		// The next row is the index of the earliest row that doesn't have a pivot yet
+		let mut next_row = 0;
+		// Reduce the matrix by each column from left-to-right
+		for column in 0..n {
+			// Find the next row with a non zero element at this column that is not already a pivot row.
+			if let Some(nonzero_row) = (next_row..m).find(|&row| self.elem(row, column) != Gfe::zero()) {
+				// Swap that row with the whatever row is current in the position of the next to-be pivot row.
+				self.swap_rows(nonzero_row, next_row);
+				// Rename the pivot row to just row
+				let row = next_row;
+				// Set the pivot element of this row to 1
+				self.mul_row(row, self.elem(row, column).inverse());
+				// Add multiples of this row to all other rows such that elements in the same column as
+				// this row's pivot are zeroed out
+				for other_row in (0..row).chain((row + 1)..m) {
+					self.add_c_row_to(row, other_row, self.elem(other_row, column).negation());
 				}
+				// The following row will be the location of the next pivot
+				next_row += 1;
 			}
-
-			// If this column is all 0 below, ignore it, it will become a parameter
-			if !found {
-				continue
-			}
-
-			// Set the diagonal entry of this row to 1
-			self.mul_row(row, self.elem(row, row).inverse());
-			println!("{self}");
-
-			// For every row below this one, add a multiple of this one such that everything below this diagonal entry is 0
-			for row_below in (row+1)..m {
-				self.add_c_row_to(row, row_below, self.elem(row_below, row).negation());
-			}
-			println!("{self}");
-		}
-
-		// Backpropagate: For each row starting from the last, add a multiple of it to all rows above it to make all
-		// entries in columns above this rows diagonal 0.
-		for row in (0..m).rev() {
-			for row_above in 0..row {
-				self.add_c_row_to(row, row_above, self.elem(row_above, row).negation());
-			}
+			
 		}
 	}
+}
+
+
+#[test]
+fn test_row_reduce_non_square_non_trivial() {
+	let elems = [
+		1, 2, 0, 1, -1, 6,
+		1, 3, 0, 1, 2, 2,
+		0, 3, 0, 2, 5, 3,
+		2, 5, 0, 2, 1, 8,
+		3, 2, 0, 6, -4, 3,
+	].into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
+	let mut matrix = Matrix { m: 5, n: 6, elems };
+	matrix.row_reduce();
+	println!("{matrix}");
+}
+
+#[test]
+fn test_row_reduce_inconsistent() {
+	let elems = [
+		1, 2, 3, 5,
+		1, 2, 3, 6,
+	].into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
+	let mut matrix = Matrix { m: 2, n: 4, elems };
+	matrix.row_reduce();
+	println!("{matrix}");
 }
 
 impl Display for Matrix {
@@ -114,19 +124,4 @@ impl Display for Matrix {
 
 		Ok(())
     }
-}
-
-
-#[test]
-fn test_row_reduce_messy() {
-	let elems = [
-		1, 2, 0, 1, -1, 6,
-		1, 3, 0, 1, 2, 2,
-		0, 3, 0, 2, 5, 3,
-		2, 5, 0, 2, 1, 8,
-		3, 2, 0, 6, -4, 3,
-	].into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
-	let mut matrix = Matrix { m: 5, n: 6, elems };
-	matrix.row_reduce();
-	println!("{matrix}");
 }
