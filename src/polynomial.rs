@@ -84,8 +84,7 @@ impl Polynomial {
 		partial + Polynomial::constant(coeff) * helper
 	}
 
-	/// Divide this polynomial by another, assuming they evenly divide.
-	/// Also assumes leading coefficient of divisor is one. TODO remove this assumption
+	/// Divide this polynomial by another
 	pub fn divide(&self, divisor: &Self) -> (Self, Self) {
 		// Algorithm overview: Repeatedly subtract multiples of the divisor from the dividend until nothing remains.
 		// First subtract a multiple of the divisor such that the leading term of the dividend is removed.
@@ -99,13 +98,14 @@ impl Polynomial {
 		// While the degree of the dividend is greater than the degree of the divisor
 		// (AKA while we can still remove terms of the dividend by subtracting multiples of the divisor)
 		while dividend.degree() >= divisor.degree() {
-			// Get the leading coefficient of the dividend
+			// Get the leading coefficient of the divisor and dividend
+			let divisor_leading_coeff = *divisor.coeffs.last().unwrap();
 			let dividend_leading_coeff = *dividend.coeffs.last().unwrap();
 			// Create a constant multiple of a power of x such that when multiplied by the divisor and subtracted from
 			// the dividend, the leading term of the dividend is removed.
-			let piece = Polynomial::single(dividend_leading_coeff, dividend.degree() - divisor.degree());
+			let piece = Polynomial::single(divisor_leading_coeff.inverse() * dividend_leading_coeff, dividend.degree() - divisor.degree());
 			// Remove the leading term of the dividend by adding piece
-			dividend = &dividend + &(&piece * divisor).negation();
+			dividend = &dividend + &(&piece * &divisor).negation();
 			// Add piece to the final quotient
 			quotient = &quotient + &piece;
 		}
@@ -199,6 +199,13 @@ impl Display for Polynomial {
 }
 
 #[test]
+fn add_test() {
+	let a = gfe_poly(&[1, 3, 3]);
+	let b = gfe_poly(&[2, 5, 3, 2]);
+	assert_eq!(a + b, gfe_poly(&[3, 8, 6, 2]));
+}
+
+#[test]
 fn multiply_test() {
 	let a = Polynomial::from_roots(&[Gfe::from(1), Gfe::from(-3)]);
 	let b = Polynomial::from_roots(&[Gfe::from(-2), Gfe::from(-1)]);
@@ -217,4 +224,30 @@ fn divide_test() {
 	let a = Polynomial::from_roots(&[Gfe::from(1), Gfe::from(-3)]);
 	assert_eq!(y.0.coeffs, a.coeffs);
 	assert_eq!(y.1.coeffs, Polynomial::constant(Gfe::zero()).coeffs);
+}
+
+#[test]
+fn divide_test_non_one_leading_coeff() {
+	let a = gfe_poly_roots(&[1, 3, 5]);
+	let b = gfe_poly_roots(&[3, 5]);
+	assert_eq!(a.divide(&b), (gfe_poly_roots(&[1]), Polynomial::zero()));
+
+	let a = gfe_poly_roots(&[1, 5, 3]) * gfe_poly_const(4);
+	let b = gfe_poly_roots(&[1, 5]) * gfe_poly_const(2);
+	assert_eq!(a.divide(&b), (gfe_poly_roots(&[3]) * gfe_poly_const(2), Polynomial::zero()));
+}
+
+#[cfg(test)]
+fn gfe_poly(coeffs: &[i64]) -> Polynomial {
+	Polynomial::new(coeffs.iter().map(|&x| Gfe::from(x)).collect())
+}
+
+#[cfg(test)]
+fn gfe_poly_const(constant: i64) -> Polynomial {
+	Polynomial::constant(Gfe::from(constant))
+}
+
+#[cfg(test)]
+fn gfe_poly_roots(roots: &[i64]) -> Polynomial {
+	Polynomial::from_roots(&roots.iter().map(|&x| Gfe::from(x)).collect::<Vec<_>>())
 }
