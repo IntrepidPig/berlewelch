@@ -1,4 +1,4 @@
-use berlewelch::*;
+use berlewelch::{*, field::Gfe29};
 use rustyline::{error::ReadlineError, Editor};
 use std::str::FromStr;
 
@@ -74,14 +74,14 @@ fn c29_to_ascii(c29: u8) -> Option<u8> {
 	})
 }
 
-fn c29_to_gfe(msg: &str) -> Option<Vec<Gfe>> {
+fn c29_to_gfe(msg: &str) -> Option<Vec<Gfe29>> {
 	msg.as_bytes()
 		.iter()
-		.map(|&x| ascii_to_c29(x).map(|x| Gfe::from(x as i64)))
+		.map(|&x| ascii_to_c29(x).map(|x| Gfe29::from(x as i64)))
 		.collect::<Option<Vec<_>>>()
 }
 
-fn gfe_to_c29(msg: &[Gfe]) -> Option<String> {
+fn gfe_to_c29(msg: &[Gfe29]) -> Option<String> {
 	msg.iter()
 		.map(|&x| u8::try_from(*x).ok().and_then(|x| c29_to_ascii(x)))
 		.collect::<Option<Vec<u8>>>()

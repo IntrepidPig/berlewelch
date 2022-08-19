@@ -3,15 +3,16 @@ use std::{
 	ops::{Add, Deref, Mul},
 };
 
-//pub const P: Gfe = Gfe(19);
-//pub const P: Gfe = Gfe(29);
-pub const P: Gfe = Gfe(0x7fffffff); // GF(2^31-1)
+pub type Gfe19 = Gfe<19>;
+pub type Gfe29 = Gfe<29>;
+pub type Gfe2_31 = Gfe<0x7fffffff>; // GF(2^31-1)
 
-/// An element of the Galois field GF(p) where p is the constant declared in this module.
+/// An element of the Galois field GF(M) where M is the constant declared in this module.
+/// NOTE: M must be prime
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Gfe(u32);
+pub struct Gfe<const M: u32>(u32);
 
-impl Gfe {
+impl<const M: u32> Gfe<M> {
 	pub fn new(x: u32) -> Self {
 		Self::from(x as i64)
 	}
@@ -26,12 +27,12 @@ impl Gfe {
 
 	pub fn inverse(self) -> Self {
 		assert!(self.0 != 0);
-		let (_d, a, _b) = gcde(self.0 as i64, P.0 as i64);
+		let (_d, a, _b) = gcde(self.0 as i64, M as i64);
 		return Self::from(a);
 	}
 
 	pub fn negation(self) -> Self {
-		Self((P.0 - self.0) % P.0)
+		Self((M - self.0) % M)
 	}
 
 	pub fn power(self, e: i32) -> Self {
@@ -54,7 +55,7 @@ impl Gfe {
 	}
 }
 
-impl Deref for Gfe {
+impl<const M: u32> Deref for Gfe<M> {
 	type Target = u32;
 
 	fn deref(&self) -> &Self::Target {
@@ -62,41 +63,41 @@ impl Deref for Gfe {
 	}
 }
 
-impl Add for Gfe {
+impl<const M: u32> Add for Gfe<M> {
 	type Output = Self;
 
 	fn add(self, rhs: Self) -> Self::Output {
-		Self(((self.0 as u64 + rhs.0 as u64) % P.0 as u64) as u32)
+		Self(((self.0 as u64 + rhs.0 as u64) % M as u64) as u32)
 	}
 }
 
-impl Mul for Gfe {
+impl<const M: u32> Mul for Gfe<M> {
 	type Output = Self;
 
 	fn mul(self, rhs: Self) -> Self::Output {
-		Self(((self.0 as u64 * rhs.0 as u64) % P.0 as u64) as u32)
+		Self(((self.0 as u64 * rhs.0 as u64) % M as u64) as u32)
 	}
 }
 
-impl From<i64> for Gfe {
+impl<const M: u32> From<i64> for Gfe<M> {
 	fn from(x: i64) -> Self {
 		if x < 0 {
 			let y = -x;
-			let k = (y + P.0 as i64 - 1) / P.0 as i64; // ceil(y / P);
-			Self((x + k * P.0 as i64) as u32)
+			let k = (y + M as i64 - 1) / M as i64; // ceil(y / P);
+			Self((x + k * M as i64) as u32)
 		} else {
-			Self((x as u64 % P.0 as u64) as u32)
+			Self((x as u64 % M as u64) as u32)
 		}
 	}
 }
 
-impl Display for Gfe {
+impl<const M: u32> Display for Gfe<M> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		Display::fmt(&self.0, f)
 	}
 }
 
-impl Debug for Gfe {
+impl<const M: u32> Debug for Gfe<M> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		Debug::fmt(&self.0, f)
 	}

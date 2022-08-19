@@ -3,6 +3,7 @@ use rand::Rng;
 
 #[test]
 fn random_trials() {
+    const M: u32 =  0x7fffffff; // 2^31-1
 	const TRIALS: usize = 20;
 	const N_MIN: usize = 10;
 	const N_MAX: usize = 50;
@@ -17,9 +18,9 @@ fn random_trials() {
 
 		// Randomly generated message
 		let message = rand::thread_rng()
-			.sample_iter(rand::distributions::Uniform::new(0, *crate::field::P))
+			.sample_iter(rand::distributions::Uniform::new(0, M))
 			.take(n)
-			.map(|x| Gfe::new(x))
+			.map(|x| Gfe::<M>::new(x))
 			.collect::<Vec<_>>();
 		// Encoded error resistant message
 		let encoded = encode(k, &message);
@@ -35,14 +36,14 @@ fn random_trials() {
 	}
 }
 
-fn corrupt(message: &mut [Gfe], e: usize) {
+fn corrupt<const M: u32>(message: &mut [Gfe<M>], e: usize) {
 	for i in rand::seq::index::sample(&mut rand::thread_rng(), message.len(), e) {
 		message[i] = rand_gfe_except(message[i]);
 	}
 }
 
-fn rand_gfe_except(x: Gfe) -> Gfe {
-	let y = rand::thread_rng().sample(rand::distributions::Uniform::new(0, *crate::field::P - 1));
+fn rand_gfe_except<const M: u32>(x: Gfe<M>) -> Gfe<M> {
+	let y = rand::thread_rng().sample(rand::distributions::Uniform::new(0, M - 1));
 	if y < *x {
 		Gfe::new(y)
 	} else {
@@ -50,7 +51,7 @@ fn rand_gfe_except(x: Gfe) -> Gfe {
 	}
 }
 
-fn gfe_msg(ints: &[i64]) -> Vec<Gfe> {
+fn gfe_msg<const M: u32>(ints: &[i64]) -> Vec<Gfe<M>> {
 	ints.iter().map(|&x| Gfe::from(x)).collect()
 }
 
@@ -60,7 +61,7 @@ fn specific_trials() {
 	let k = 2;
 	let encoded = encode(k, &message);
 	let mut corrupted = encoded.clone();
-	corrupted[1] = Gfe::new(6);
+	corrupted[1] = Gfe::<19>::new(6);
 	let mut decoded = corrupted.clone();
 	decode(k, &mut decoded).unwrap();
 	println!("Message: {message:?}\nEncoded: {encoded:?}\nCorrupted: {corrupted:?}\nDecoded: {decoded:?}");

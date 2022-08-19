@@ -11,11 +11,11 @@ pub use self::field::Gfe;
 /// Construct an error resistant message for a given message r. k is the number
 /// of general errors to protect against. The encoded message will have 2k extra
 /// values.
-pub fn encode(k: usize, r: &[Gfe]) -> Vec<Gfe> {
+pub fn encode<const M: u32>(k: usize, r: &[Gfe<M>]) -> Vec<Gfe<M>> {
 	// Length of initial message
 	let n = r.len();
 
-	if n > *self::field::P as usize {
+	if n > M as usize {
 		panic!("Message too long for this field")
 	}
 
@@ -31,7 +31,7 @@ pub fn encode(k: usize, r: &[Gfe]) -> Vec<Gfe> {
 
 /// Correct a message with up to k corruptions. It will be present in the first
 /// r.len()-2*k items in r.
-pub fn decode(k: usize, r: &mut [Gfe]) -> Result<(), ()> {
+pub fn decode<const M: u32>(k: usize, r: &mut [Gfe<M>]) -> Result<(), ()> {
 	// Length of the message
 	let n = r.len() - 2 * k;
 	// Total number of message packets and the total number of unknown coefficients
