@@ -13,6 +13,10 @@ impl Polynomial {
 		Self { coeffs: vec![c] }
 	}
 
+	pub fn zero() -> Self {
+		Self::constant(Gfe::zero())
+	}
+
 	pub fn single(c: Gfe, d: usize) -> Self {
 		let mut coeffs = vec![Gfe::zero(); d];
 		coeffs.push(c);
@@ -56,22 +60,28 @@ impl Polynomial {
 	/// Given `n` points, generate the unique degree at most `n-1` polynomial that passes through these points.
 	/// 
 	/// All passed x coordinates must be unique
-	pub fn from_points(p: &[(Gfe, Gfe)]) -> Self {
-		assert_ne!(p.len(), 0);
-		// TODO: assert: all x coords different
-		if p.len() == 1 {
-			return Polynomial::constant(p[0].1)
+	// TODO: try solving system of linear eqn instead of lagrange interpolation
+	pub fn from_points(points: &[(Gfe, Gfe)]) -> Self {
+		assert!(!points.is_empty());
+
+		// Base case, there is one point simply return a constant polynomial with that point
+		if points.len() == 1 {
+			return Polynomial::constant(points[0].1)
 		}
 
-		let rec = Polynomial::from_points(&p[1..]);
-		let a_num = p[0].1 + rec.eval(p[0].0).negation();
-		let mut a_den = Gfe::one();
-		for j in 1..p.len() {
-			a_den = a_den * (p[0].0 + p[j].0.negation());
-		}
-		let a = a_num * a_den.inverse();
+		// Recursive case: Given points (x0, y0), ..., (xn, yn). Create a partial polynomial P(x) that passes through
+		// all points except point 0. Let Z(x) be the polynomial (x-x1)...(x-xn) that has a leading coefficient of 1 and
+		// roots on all points 1 to n. Then the new polynomial that passes through every point is given by P(x) +
+		// Z(x)/Z(x0) * (y0 - P(x0))
 
-		&rec + &(&Polynomial::constant(a) * &Polynomial::from_roots(&p[1..].iter().map(|p| p.0).collect::<Vec<_>>())) // TODO: finish funny interpolation method
+		// P(x)
+		let partial = Polynomial::from_points(&points[1..]);
+		// Z(x)
+		let helper = Polynomial::from_roots(&points[1..].iter().map(|p| p.0).collect::<Vec<_>>());
+		// (y0 - P(x0))/Z(x0)
+		let coeff = (points[0].1 + partial.eval(points[0].0).negation()) * helper.eval(points[0].0).inverse();
+		// P(x) + (y0 - P(x0))/Z(x0) * Z(x)
+		partial + Polynomial::constant(coeff) * helper
 	}
 
 	/// Divide this polynomial by another, assuming they evenly divide.
@@ -132,6 +142,14 @@ impl Add for &'_ Polynomial {
     }
 }
 
+impl Add for Polynomial {
+    type Output = Polynomial;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        &self + &rhs
+    }
+}
+
 impl Mul for &'_ Polynomial {
 	type Output = Polynomial;
 
@@ -144,6 +162,21 @@ impl Mul for &'_ Polynomial {
 		}
 		Polynomial::new(coeffs)
 	}
+}
+
+impl Mul for Polynomial {
+	type Output = Polynomial;
+
+	fn mul(self, rhs: Self) -> Self::Output {
+		&self * &rhs
+	}
+}
+
+impl PartialEq for Polynomial {
+    fn eq(&self, other: &Self) -> bool {
+		// TODO: ensure invariants are held such that this implementation is valid
+        self.coeffs == other.coeffs
+    }
 }
 
 impl Display for Polynomial {
