@@ -1,13 +1,13 @@
-use crate::{*, field::P};
-use rand::{Rng, seq::SliceRandom};
+use crate::*;
+use rand::Rng;
 
 #[test]
 fn random_trials() {
-    const TRIALS: usize = 10;
-    const N_MIN: usize = 5;
-    const N_MAX: usize = 10;
-    const K_MIN: usize = 3;
-    const K_MAX: usize = 6;
+    const TRIALS: usize = 20;
+    const N_MIN: usize = 10;
+    const N_MAX: usize = 50;
+    const K_MIN: usize = 10;
+    const K_MAX: usize = 20;
 
     for _ in 0..TRIALS {
         // Length of message
@@ -30,7 +30,7 @@ fn random_trials() {
         let mut corrupted = encoded.clone();
         corrupt(&mut corrupted, e);
 
-        correct(k, &mut corrupted);
+        decode(k, &mut corrupted).unwrap();
         assert_eq!(corrupted, encoded);
     }
 }
@@ -48,4 +48,21 @@ fn rand_gfe_except(x: Gfe) -> Gfe {
     } else {
         Gfe::new(y + 1)
     }
+}
+
+fn gfe_msg(ints: &[i64]) -> Vec<Gfe> {
+    ints.iter().map(|&x| Gfe::from(x)).collect()
+}
+
+#[test]
+fn specific_trials() {
+    let message = gfe_msg(&[1, 5, 3, 4]);
+    let k = 2;
+    let encoded = encode(k, &message);
+    let mut corrupted = encoded.clone();
+    corrupted[1] = Gfe::new(6);
+    let mut decoded = corrupted.clone();
+    decode(k, &mut decoded).unwrap();
+    println!("Message: {message:?}\nEncoded: {encoded:?}\nCorrupted: {corrupted:?}\nDecoded: {decoded:?}");
+    assert_eq!(&message, &decoded[..message.len()]);
 }

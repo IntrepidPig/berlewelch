@@ -13,7 +13,6 @@ pub struct Matrix {
 impl Matrix {
 	/// Multiply row i by scalar c
 	pub fn mul_row(&mut self, i: usize, c: Gfe) {
-		println!("Multiplying row {i} by {c}");
 		let (_m, n) = (self.m, self.n);
 		for j in 0..n {
 			self.elems[i * n + j] = self.elems[i * n + j] * c;
@@ -22,7 +21,6 @@ impl Matrix {
 
 	/// Add c * row[i1] to row[i2]
 	pub fn add_c_row_to(&mut self, i1: usize, i2: usize, c: Gfe) {
-		println!("Adding {c} times row {i1} to row {i2}");
 		let (_m, n) = (self.m, self.n);
 		for j in 0..n {
 			self.elems[i2 * n + j] = self.elems[i2 * n + j] + self.elems[i1 * n + j] * c;
@@ -31,7 +29,6 @@ impl Matrix {
 
 	/// Swap rows i1 and i2
 	pub fn swap_rows(&mut self, i1: usize, i2: usize) {
-		println!("Swapping rows {i1} and {i2}");
 		let (_m, n) = (self.m, self.n);
 		for j in 0..n {
 			let tmp = self.elems[i1 * n + j];

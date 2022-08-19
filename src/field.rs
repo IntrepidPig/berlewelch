@@ -1,11 +1,12 @@
-use std::{ops::{Add, Mul, Deref}, fmt::Display};
+use std::{ops::{Add, Mul, Deref}, fmt::{Display, Debug}};
 
 
-//pub const P: Gfe = Gfe(0x7fffffff); // GF(2^31-1)
-pub const P: Gfe = Gfe(19);
+pub const P: Gfe = Gfe(0x7fffffff); // GF(2^31-1)
+//pub const P: Gfe = Gfe(19);
+//pub const P: Gfe = Gfe(29);
 
 /// An element of the Galois field GF(p) where p is the constant declared in this module.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Gfe(u32);
 
 impl Gfe {
@@ -24,7 +25,6 @@ impl Gfe {
 	pub fn inverse(self) -> Self {
 		assert!(self.0 != 0);
 		let (_d, a, _b) = gcde(self.0 as i64, P.0 as i64);
-		println!("gcde({self}, {P}) = ({_d}, {a}, {_b})");
 		return Self::from(a);
 	}
 
@@ -88,7 +88,13 @@ impl From<i64> for Gfe {
 
 impl Display for Gfe {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl Debug for Gfe {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
     }
 }
 

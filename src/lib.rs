@@ -14,11 +14,16 @@ pub use self::field::Gfe;
 pub fn encode(k: usize, r: &[Gfe]) -> Vec<Gfe> {
 	// Length of initial message
 	let n = r.len();
+
+	if n > *self::field::P as usize {
+		panic!("Message too long for this field")
+	}
+
 	// Convert message to a set of points
-	let p = r.iter().enumerate().map(|x| (Gfe::from(x.0 as i64), *x.1)).collect::<Vec<_>>();
+	let points = r.iter().enumerate().map(|x| (Gfe::from(x.0 as i64), *x.1)).collect::<Vec<_>>();
 	// Construct the unique polynomial of degree at most n-1 that passes through
 	// these points.
-	let poly = Polynomial::from_points(&p);
+	let poly = Polynomial::from_points(&points);
 	// Construct the error-resistant message by including an additional 2k
 	// points on the polynomial in the message.
 	(0..(n+2*k)).map(|x| poly.eval(Gfe::from(x as i64))).collect()
