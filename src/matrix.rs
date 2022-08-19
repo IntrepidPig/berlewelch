@@ -69,21 +69,23 @@ impl Matrix {
 				// The following row will be the location of the next pivot
 				next_row += 1;
 			}
-			
 		}
 	}
 }
 
-
 #[test]
 fn test_row_reduce_non_square_non_trivial() {
+	#[rustfmt::skip]
 	let elems = [
 		1, 2, 0, 1, -1, 6,
 		1, 3, 0, 1, 2, 2,
 		0, 3, 0, 2, 5, 3,
 		2, 5, 0, 2, 1, 8,
 		3, 2, 0, 6, -4, 3,
-	].into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
+	]
+		.into_iter()
+		.map(|x| Gfe::from(x))
+		.collect::<Vec<_>>();
 	let mut matrix = Matrix { m: 5, n: 6, elems };
 	matrix.row_reduce();
 	println!("{matrix}");
@@ -91,22 +93,24 @@ fn test_row_reduce_non_square_non_trivial() {
 
 #[test]
 fn test_row_reduce_inconsistent() {
+	#[rustfmt::skip]
 	let elems = [
 		1, 2, 3, 5,
-		1, 2, 3, 6,
-	].into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
+		1, 2, 3, 6
+	]
+		.into_iter().map(|x| Gfe::from(x)).collect::<Vec<_>>();
 	let mut matrix = Matrix { m: 2, n: 4, elems };
 	matrix.row_reduce();
 	println!("{matrix}");
 }
 
 impl Display for Matrix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if self.m * self.n == 0 {
 			return write!(f, "<empty matrix>");
 		}
 
-        let maxw = self.elems.iter().map(|x| format!("{x}").len()).max().unwrap();
+		let maxw = self.elems.iter().map(|x| format!("{x}").len()).max().unwrap();
 		for i in 0..self.m {
 			write!(f, "| ")?;
 			for j in 0..self.n {
@@ -120,5 +124,5 @@ impl Display for Matrix {
 		}
 
 		Ok(())
-    }
+	}
 }

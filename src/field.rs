@@ -1,9 +1,11 @@
-use std::{ops::{Add, Mul, Deref}, fmt::{Display, Debug}};
+use std::{
+	fmt::{Debug, Display},
+	ops::{Add, Deref, Mul},
+};
 
-
-pub const P: Gfe = Gfe(0x7fffffff); // GF(2^31-1)
 //pub const P: Gfe = Gfe(19);
 //pub const P: Gfe = Gfe(29);
+pub const P: Gfe = Gfe(0x7fffffff); // GF(2^31-1)
 
 /// An element of the Galois field GF(p) where p is the constant declared in this module.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -43,27 +45,29 @@ impl Gfe {
 			return self;
 		}
 
-		let mut r = self.power(e/2);
+		let mut r = self.power(e / 2);
 		r = r * r;
-		if e % 2 == 1 { r = r * self };
+		if e % 2 == 1 {
+			r = r * self
+		};
 		r
 	}
 }
 
 impl Deref for Gfe {
-    type Target = u32;
+	type Target = u32;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
 }
 
 impl Add for Gfe {
-    type Output = Self;
+	type Output = Self;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        Self(((self.0 as u64 + rhs.0 as u64) % P.0 as u64) as u32)
-    }
+	fn add(self, rhs: Self) -> Self::Output {
+		Self(((self.0 as u64 + rhs.0 as u64) % P.0 as u64) as u32)
+	}
 }
 
 impl Mul for Gfe {
@@ -87,15 +91,15 @@ impl From<i64> for Gfe {
 }
 
 impl Display for Gfe {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		Display::fmt(&self.0, f)
+	}
 }
 
 impl Debug for Gfe {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(&self.0, f)
-    }
+		Debug::fmt(&self.0, f)
+	}
 }
 
 pub fn gcde(x: i64, y: i64) -> (i64, i64, i64) {
@@ -105,5 +109,5 @@ pub fn gcde(x: i64, y: i64) -> (i64, i64, i64) {
 
 	let r = x % y;
 	let (d, ap, bp) = gcde(y, r);
-	(d, bp, ap - bp * (x/y))
+	(d, bp, ap - bp * (x / y))
 }

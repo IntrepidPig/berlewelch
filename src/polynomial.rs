@@ -1,4 +1,8 @@
-use std::{cmp::max, ops::{Add, Mul}, fmt::Display};
+use std::{
+	cmp::max,
+	fmt::Display,
+	ops::{Add, Mul},
+};
 
 use crate::field::Gfe;
 
@@ -22,7 +26,7 @@ impl Polynomial {
 		coeffs.push(c);
 		Self::new(coeffs)
 	}
-	
+
 	pub fn eval(&self, x: Gfe) -> Gfe {
 		let mut y = Gfe::zero();
 		for i in 0..self.coeffs.len() {
@@ -58,7 +62,7 @@ impl Polynomial {
 	}
 
 	/// Given `n` points, generate the unique degree at most `n-1` polynomial that passes through these points.
-	/// 
+	///
 	/// All passed x coordinates must be unique
 	// TODO: try solving system of linear eqn instead of lagrange interpolation
 	pub fn from_points(points: &[(Gfe, Gfe)]) -> Self {
@@ -66,7 +70,7 @@ impl Polynomial {
 
 		// Base case, there is one point simply return a constant polynomial with that point
 		if points.len() == 1 {
-			return Polynomial::constant(points[0].1)
+			return Polynomial::constant(points[0].1);
 		}
 
 		// Recursive case: Given points (x0, y0), ..., (xn, yn). Create a partial polynomial P(x) that passes through
@@ -103,7 +107,10 @@ impl Polynomial {
 			let dividend_leading_coeff = *dividend.coeffs.last().unwrap();
 			// Create a constant multiple of a power of x such that when multiplied by the divisor and subtracted from
 			// the dividend, the leading term of the dividend is removed.
-			let piece = Polynomial::single(divisor_leading_coeff.inverse() * dividend_leading_coeff, dividend.degree() - divisor.degree());
+			let piece = Polynomial::single(
+				divisor_leading_coeff.inverse() * dividend_leading_coeff,
+				dividend.degree() - divisor.degree(),
+			);
 			// Remove the leading term of the dividend by adding piece
 			dividend = &dividend + &(&piece * &divisor).negation();
 			// Add piece to the final quotient
@@ -118,15 +125,17 @@ impl Polynomial {
 	}
 
 	pub fn negation(&self) -> Self {
-		Self { coeffs: self.coeffs.iter().map(|x| x.negation()).collect() }
+		Self {
+			coeffs: self.coeffs.iter().map(|x| x.negation()).collect(),
+		}
 	}
 }
 
 impl Add for &'_ Polynomial {
-    type Output = Polynomial;
+	type Output = Polynomial;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut coeffs = Vec::new();
+	fn add(self, rhs: Self) -> Self::Output {
+		let mut coeffs = Vec::new();
 		let r = max(self.coeffs.len(), rhs.coeffs.len());
 		for i in 0..r {
 			coeffs.push(Gfe::zero());
@@ -137,17 +146,17 @@ impl Add for &'_ Polynomial {
 				coeffs[i] = coeffs[i] + rhs.coeffs[i];
 			}
 		}
-		
+
 		Polynomial::new(coeffs)
-    }
+	}
 }
 
 impl Add for Polynomial {
-    type Output = Polynomial;
+	type Output = Polynomial;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        &self + &rhs
-    }
+	fn add(self, rhs: Self) -> Self::Output {
+		&self + &rhs
+	}
 }
 
 impl Mul for &'_ Polynomial {
@@ -157,7 +166,7 @@ impl Mul for &'_ Polynomial {
 		let mut coeffs = vec![Gfe::zero(); self.coeffs.len() + rhs.coeffs.len()];
 		for i in 0..self.coeffs.len() {
 			for j in 0..rhs.coeffs.len() {
-				coeffs[i+j] = coeffs[i+j] + self.coeffs[i] * rhs.coeffs[j];
+				coeffs[i + j] = coeffs[i + j] + self.coeffs[i] * rhs.coeffs[j];
 			}
 		}
 		Polynomial::new(coeffs)
@@ -173,14 +182,14 @@ impl Mul for Polynomial {
 }
 
 impl PartialEq for Polynomial {
-    fn eq(&self, other: &Self) -> bool {
+	fn eq(&self, other: &Self) -> bool {
 		// TODO: ensure invariants are held such that this implementation is valid
-        self.coeffs == other.coeffs
-    }
+		self.coeffs == other.coeffs
+	}
 }
 
 impl Display for Polynomial {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		for i in 0..self.coeffs.len() {
 			write!(f, "{}", self.coeffs[i])?;
 			if i > 0 {
@@ -194,8 +203,8 @@ impl Display for Polynomial {
 			}
 		}
 
-        Ok(())
-    }
+		Ok(())
+	}
 }
 
 #[test]
