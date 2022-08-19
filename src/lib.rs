@@ -26,7 +26,7 @@ pub fn encode(k: usize, r: &[Gfe]) -> Vec<Gfe> {
 
 /// Correct a message with up to k corruptions. It will be present in the first
 /// r.len()-2*k items in r.
-pub fn correct(k: usize, r: &mut [Gfe]) {
+pub fn decode(k: usize, r: &mut [Gfe]) -> Result<(), ()> {
 	// Length of the message
 	let n = r.len() - 2 * k;
 	// Total number of message packets and the total number of unknown coefficients
@@ -48,30 +48,62 @@ pub fn correct(k: usize, r: &mut [Gfe]) {
 	// Initialize entries of the matrix. For each row i (i = index in message and input to polynomial as well)
 	for i in 0..z {
 		// For each coefficient a of Q(x)
-		for ai in 0..(n+k) {
+		for a in 0..(n+k) {
 			// Set coefficient a_{ai} = i^{ai}
-			mat.elems[i * (z + 1) + ai] = Gfe::new(i as u32).power((ai) as i32); // a_{0..n+k-1} * i^(0..n+k-1)
+			*mat.elem_mut(i, a) = Gfe::new(i as u32).power(a as i32); // a_{0..n+k-1} * i^(0..n+k-1)
 		}
-		for bi in 0..k {
-			mat.elems[i * (z + 1) + n + k + bi] = (r[i] * Gfe::new(i as u32).power((bi) as i32)).negation(); // b_{0..k-1} * -r_i * i^(0..k-1)
+		for b in 0..k {
+			// Set the coefficient b_{bi} = -
+			*mat.elem_mut(i, n + k + b) = (r[i] * Gfe::new(i as u32).power(b as i32)).negation(); // b_{0..k-1} * -r_i * i^(0..k-1)
 		}
-		mat.elems[i * (z + 1) + n + 2 * k] = r[i] * Gfe::new(i as u32).power(k as i32); // = r_i * i^k
+		*mat.elem_mut(i, n + 2 * k) = r[i] * Gfe::new(i as u32).power(k as i32); // = r_i * i^k
 	}
-	println!("{mat}");
 	mat.row_reduce();
-	println!("{mat}");
 
-	let q = Polynomial::new((0..n+k).map(|i| mat.elems[(i + 1) * (z + 1) - 1]).collect::<Vec<_>>());
-	let mut e = Polynomial::new((n+k..n+2*k).map(|i| mat.elems[(i + 1) * (z + 1) - 1]).collect::<Vec<_>>());
-	e.coeffs.push(Gfe::new(1));
-	println!("Q = {q:?}\nE = {e:?}");
+	// TODO: assert that:
+	// 1. the matrix implies that there is a unique solution OR
+	// the matrix implies that there are infinitely many solutions and all of the parameters are in the error polynomial (is this second part even a thing?)
+	// 2. the system is not inconsistent
+
+	// This assumes that there is a unique solution or the only parameters are the errors. It makes use of this since it can
+	// then simply ignore error parameters by setting them to zero. Some more work might be required to detect cases where the
+	// system is inconsistent or otherwise invalid.
+	let mut q_coeffs = Vec::new();
+	for i in 0..(n+k) {
+		if let Some(row) = (0..z).find(|&row| mat.elem(row, i) == Gfe::one()) {
+			q_coeffs.push(mat.elem(row, z));
+		} else {
+			// ERROR: No determinate value for coefficient i of Q polynomial
+			return Err(());
+		}
+	}
+
+	let mut e_coeffs = Vec::new();
+	for i in (n+k)..(n+2*k) {
+		if let Some(row) = (0..z).find(|&row| (0..i).all(|j| mat.elem(row, j) == Gfe::zero()) && mat.elem(row, i) == Gfe::one()) {
+			e_coeffs.push(mat.elem(row, z));
+		} else {
+			// If this error is a parameter just we are assuming it is zero.
+			e_coeffs.push(Gfe::zero());
+		}
+	}
+	e_coeffs.push(Gfe::new(1));
+
+
+	let q = Polynomial::new(q_coeffs);
+	let e = Polynomial::new(e_coeffs);
 	let (p, rem) = q.divide(&e);
-	assert!(&rem.coeffs == &[Gfe::zero()]);
+	
+	if rem != Polynomial::zero() {
+		// Nonzero remainder indicates decoding failed
+		return Err(())
+	}
+
 	for i in 0..(n+2*k) {
 		r[i] = p.eval(Gfe::from(i as i64));
 	}
-	// get polynomials Q(x) and E(x) from solved coefficients in matrix
-	// divide Q(x) by E(x) to get P(x)
+
+	Ok(())
 }
 
 
