@@ -32,6 +32,11 @@ pub fn encode<const M: u32>(k: usize, r: &[Gfe<M>]) -> Vec<Gfe<M>> {
 /// Correct a message with up to k corruptions. It will be present in the first
 /// r.len()-2*k items in r.
 pub fn decode<const M: u32>(k: usize, r: &mut [Gfe<M>]) -> Result<(), ()> {
+	// Ensure the message is long enough given the number of errors (at least one character besides error-correction ones)
+	if r.len() < 1 + 2 * k {
+		return Err(())
+	}
+
 	// Length of the message
 	let n = r.len() - 2 * k;
 	// Total number of message packets and the total number of unknown coefficients
